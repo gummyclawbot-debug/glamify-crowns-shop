@@ -7,15 +7,16 @@ import AddToCartButton from '@/app/components/AddToCartButton'
 export const revalidate = 60
 
 interface ProductPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
+  const { id } = await params
   const productRaw = await prisma.product.findUnique({
     where: {
-      id: params.id,
+      id,
     },
   })
 

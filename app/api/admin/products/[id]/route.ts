@@ -3,11 +3,12 @@ import { prisma } from '@/lib/prisma'
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     await prisma.product.delete({
-      where: { id: params.id },
+      where: { id },
     })
     return NextResponse.json({ message: 'Product deleted' })
   } catch (error) {
@@ -17,9 +18,10 @@ export async function DELETE(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const data = await request.json()
     
     // Convert images array to string for SQLite
@@ -28,7 +30,7 @@ export async function PUT(
       : data.images
     
     const product = await prisma.product.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name: data.name,
         description: data.description,
