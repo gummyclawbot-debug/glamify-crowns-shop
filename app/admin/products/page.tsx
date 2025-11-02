@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Plus, Edit, Trash2, Search } from 'lucide-react'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
+import CrownIcon from '@/app/components/CrownIcon'
 
 interface Product {
   id: string
@@ -105,8 +106,8 @@ export default function AdminProductsPage() {
                       className="object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-4xl">
-                      👑
+                    <div className="w-full h-full flex items-center justify-center">
+                      <CrownIcon size={80} variant="gradient" />
                     </div>
                   )}
                 </div>

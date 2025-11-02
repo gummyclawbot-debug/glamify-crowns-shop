@@ -91,7 +91,14 @@ function AddToCartButton() {
 - Credentials provider for email/password
 - Easy to extend with OAuth providers
 - Built-in CSRF protection
-- Secure cookie handling
+- Secure cookie handling (httpOnly, sameSite)
+
+**Implementation Status**: ✅ Complete
+- Full authentication flow operational
+- User creation scripts working
+- Password hashing with bcrypt (10 salt rounds)
+- Admin flag validation enforced
+- Middleware configured (disabled for dev testing)
 
 **Pattern**:
 ```typescript
@@ -99,15 +106,54 @@ function AddToCartButton() {
 const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
+      name: 'credentials',
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
+      },
       async authorize(credentials) {
-        // Verify user in database
-        // Check password with bcrypt
-        // Return user or null
+        // 1. Find user by email
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email }
+        })
+        
+        // 2. Verify admin status
+        if (!user || !user.isAdmin) return null
+        
+        // 3. Verify password with bcrypt
+        const isValid = await bcrypt.compare(
+          credentials.password,
+          user.password
+        )
+        
+        if (!isValid) return null
+        
+        // 4. Return user object for session
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name
+        }
       }
     })
   ],
-  session: { strategy: "jwt" },
-  pages: { signIn: "/admin/login" }
+  session: { 
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60 // 30 days
+  },
+  pages: { 
+    signIn: "/admin/login" 
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) token.id = user.id
+      return token
+    },
+    async session({ session, token }) {
+      if (session.user) session.user.id = token.id as string
+      return session
+    }
+  }
 }
 ```
 

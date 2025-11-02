@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ShoppingBag } from 'lucide-react'
 import { useCart } from '@/app/store/cartStore'
 import toast from 'react-hot-toast'
+import CrownIcon from '@/app/components/CrownIcon'
 
 interface Product {
   id: string
@@ -51,8 +52,8 @@ export default function ProductCard({ product }: ProductCardProps) {
               className="object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-6xl">
-              👑
+            <div className="w-full h-full flex items-center justify-center">
+              <CrownIcon size={120} variant="gradient" />
             </div>
           )}
           {product.stock === 0 && (

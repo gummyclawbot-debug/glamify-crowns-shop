@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { ShoppingBag, Menu, X, User, Search } from 'lucide-react'
 import { useCart } from '@/app/store/cartStore'
+import CrownIcon from '@/app/components/CrownIcon'
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -16,7 +17,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 group">
-            <span className="text-3xl">👑</span>
+            <CrownIcon size={40} variant="gradient" />
             <span className="text-2xl font-bold bg-gradient-to-r from-rose to-primary-dark bg-clip-text text-transparent group-hover:from-primary-dark group-hover:to-rose transition-all">
               Glamify Crowns
             </span>

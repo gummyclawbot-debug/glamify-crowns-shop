@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ArrowRight, Sparkles, Heart, Shield, Award, Star } from 'lucide-react'
+import CrownIcon from '@/app/components/CrownIcon'
 
 export default function HomePage() {
   return (
@@ -35,7 +36,7 @@ export default function HomePage() {
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-rose/20 to-secondary/20 rounded-3xl blur-3xl"></div>
               <div className="relative bg-gradient-to-br from-blush to-sage/30 rounded-3xl p-12 lg:p-20 flex items-center justify-center shadow-soft">
-                <div className="text-9xl">👑</div>
+                <CrownIcon size={200} variant="gradient" animated={true} />
               </div>
             </div>
           </div>
@@ -105,8 +106,8 @@ export default function HomePage() {
           <div className="grid md:grid-cols-3 gap-8 mb-12">
             {[1, 2, 3].map((i) => (
               <div key={i} className="card p-8 space-y-4 bg-gradient-to-br from-blush/20 to-sage/20">
-                <div className="aspect-square bg-white rounded-2xl flex items-center justify-center text-6xl">
-                  👑
+                <div className="aspect-square bg-white rounded-2xl flex items-center justify-center">
+                  <CrownIcon size={120} variant="gradient" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900">Crown Collection</h3>
                 <p className="text-gray-600">Discover beautiful handcrafted pieces</p>

@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react'
 import { useCart } from '@/app/store/cartStore'
+import CrownIcon from '@/app/components/CrownIcon'
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, getTotal } = useCart()
@@ -42,8 +43,8 @@ export default function CartPage() {
                       className="object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-3xl">
-                      👑
+                    <div className="w-full h-full flex items-center justify-center">
+                      <CrownIcon size={60} variant="gradient" />
                     </div>
                   )}
                 </div>
