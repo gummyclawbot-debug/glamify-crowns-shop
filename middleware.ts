@@ -1,11 +1,28 @@
-// Temporarily disabled authentication for testing
-// TODO: Re-enable authentication once admin panel is working
+import { withAuth } from "next-auth/middleware"
 import { NextResponse } from "next/server"
 
-export function middleware(req: Request) {
-  return NextResponse.next()
-}
+export default withAuth(
+  function middleware(req) {
+    // Middleware logic runs after authentication check
+    return NextResponse.next()
+  },
+  {
+    callbacks: {
+      authorized: ({ token }) => {
+        // User must have a valid token to access protected routes
+        return !!token
+      }
+    },
+    pages: {
+      signIn: "/admin/login",
+    }
+  }
+)
 
+// Protect all /admin routes except /admin/login
 export const config = {
-  matcher: [],
+  matcher: [
+    '/admin',
+    '/admin/((?!login).*)',
+  ]
 }
