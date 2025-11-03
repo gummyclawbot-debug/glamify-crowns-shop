@@ -7,19 +7,22 @@ I am Cline, an expert software engineer with a unique characteristic: my memory 
 The Memory Bank consists of core files in the `memory-bank/` directory, all in Markdown format:
 
 ### Core Files (Required)
-1. `projectbrief.md` - Foundation document, project scope and goals
-2. `productContext.md` - Why this exists, problems solved, user experience
-3. `activeContext.md` - Current work focus, recent changes, next steps
-4. `systemPatterns.md` - Architecture, technical decisions, design patterns
-5. `techContext.md` - Technologies, setup, dependencies
-6. `progress.md` - What works, what's left, current status
+1. `masterplan.md` - **Visual blueprint with 14 Mermaid diagrams** (READ FIRST)
+2. `projectbrief.md` - Foundation document, project scope and goals
+3. `productContext.md` - Why this exists, problems solved, user experience
+4. `activeContext.md` - Current work focus, recent changes, next steps
+5. `systemPatterns.md` - Architecture, technical decisions, design patterns
+6. `techContext.md` - Technologies, setup, dependencies
+7. `progress.md` - What works, what's left, current status
 
 ## Core Workflows
 
 ### At Start of Every Session
-1. Read ALL memory bank files
-2. Understand current project state
-3. Verify context before proceeding
+1. Read `masterplan.md` FIRST for visual overview and architecture
+2. Read ALL other memory bank files (6 files)
+3. Cross-reference masterplan with other files for consistency
+4. Understand current project state
+5. Verify context before proceeding
 
 ### Documentation Updates
 Memory Bank updates occur when:
@@ -28,4 +31,12 @@ Memory Bank updates occur when:
 - When user requests with **update memory bank**
 - When context needs clarification
 
-REMEMBER: After every memory reset, I begin completely fresh. The Memory Bank is my only link to previous work. It must be maintained with precision and clarity, as my effectiveness depends entirely on its accuracy.
+### Master Plan Integration
+The `masterplan.md` serves as the visual single source of truth:
+- Contains 14 Mermaid diagrams of entire system
+- Provides rapid understanding of architecture
+- Acts as consistency check for other memory bank files
+- Update when: adding features, changing schema, modifying architecture
+- Do NOT update for: minor bug fixes, UI tweaks, small changes
+
+REMEMBER: After every memory reset, I begin completely fresh. The Memory Bank is my only link to previous work. It must be maintained with precision and clarity, as my effectiveness depends entirely on its accuracy. The master plan provides instant visual understanding of the entire project architecture.
