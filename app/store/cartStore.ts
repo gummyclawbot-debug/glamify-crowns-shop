@@ -7,6 +7,12 @@ export interface CartItem {
   price: number
   image: string
   quantity: number
+  variantSelections?: Record<string, string>
+  personalizationText?: string
+}
+
+function cartItemKey(item: { id: string; variantSelections?: Record<string, string>; personalizationText?: string }) {
+  return `${item.id}_${JSON.stringify(item.variantSelections || {})}_${item.personalizationText || ''}`
 }
 
 interface CartStore {
@@ -22,54 +28,39 @@ export const useCart = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
-      
+
       addItem: (item) => {
         set((state) => {
-          const existingItem = state.items.find((i) => i.id === item.id)
-          
-          if (existingItem) {
+          const key = cartItemKey(item)
+          const existing = state.items.find((i) => cartItemKey(i) === key)
+
+          if (existing) {
             return {
               items: state.items.map((i) =>
-                i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+                cartItemKey(i) === key ? { ...i, quantity: i.quantity + 1 } : i
               ),
             }
           }
-          
-          return {
-            items: [...state.items, { ...item, quantity: 1 }],
-          }
+
+          return { items: [...state.items, { ...item, quantity: 1 }] }
         })
       },
-      
+
       removeItem: (id) => {
-        set((state) => ({
-          items: state.items.filter((item) => item.id !== id),
-        }))
+        set((state) => ({ items: state.items.filter((item) => item.id !== id) }))
       },
-      
+
       updateQuantity: (id, quantity) => {
-        if (quantity <= 0) {
-          get().removeItem(id)
-          return
-        }
-        
+        if (quantity <= 0) { get().removeItem(id); return }
         set((state) => ({
-          items: state.items.map((item) =>
-            item.id === id ? { ...item, quantity } : item
-          ),
+          items: state.items.map((item) => item.id === id ? { ...item, quantity } : item),
         }))
       },
-      
-      clearCart: () => {
-        set({ items: [] })
-      },
-      
-      getTotal: () => {
-        return get().items.reduce((total, item) => total + item.price * item.quantity, 0)
-      },
+
+      clearCart: () => { set({ items: [] }) },
+
+      getTotal: () => get().items.reduce((total, item) => total + item.price * item.quantity, 0),
     }),
-    {
-      name: 'cart-storage',
-    }
+    { name: 'cart-storage' }
   )
 )

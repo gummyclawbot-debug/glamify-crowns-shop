@@ -19,39 +19,128 @@ model User {
 }
 
 model Product {
-  id          String      @id @default(cuid())
-  name        String
-  description String
-  price       Float
-  images      String[]    // PostgreSQL native array support
-  category    String
-  stock       Int         @default(0)
-  featured    Boolean     @default(false)
-  orderItems  OrderItem[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id                      String   @id @default(cuid())
+  name                    String
+  description             String
+  price                   Float
+  compareAtPrice          Float?
+  images                  String[]
+  category                String
+  subcategory             String?
+  tags                    String[]
+  stock                   Int      @default(0)
+  featured                Boolean  @default(false)
+  status                  String   @default("active")
+
+  weightOz                Float?
+  lengthIn                Float?
+  widthIn                 Float?
+  heightIn                Float?
+  processingDays          Int      @default(3)
+  shippingProfileId       String?
+  shippingProfile         ShippingProfile? @relation(fields: [shippingProfileId], references: [id])
+
+  personalizationEnabled  Boolean  @default(false)
+  personalizationPrompt   String?
+  personalizationRequired Boolean  @default(false)
+
+  variants                ProductVariant[]
+  orderItems              OrderItem[]
+  reviews                 Review[]
+
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
+model ProductVariant {
+  id            String  @id @default(cuid())
+  productId     String
+  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type          String
+  value         String
+  priceModifier Float   @default(0)
+  stock         Int     @default(0)
+  sku           String?
+  photoIndex    Int?
+}
+
+model ShippingProfile {
+  id                    String   @id @default(cuid())
+  name                  String
+  originZip             String
+  processingTimeMin     Int      @default(1)
+  processingTimeMax     Int      @default(3)
+  domesticRate          Float
+  additionalItemRate    Float    @default(0)
+  freeShippingEnabled   Boolean  @default(false)
+  freeShippingMinimum   Float?
+  internationalRate     Float?
+  products              Product[]
+  createdAt             DateTime @default(now())
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  userId          String
-  user            User        @relation(fields: [userId], references: [id])
-  items           OrderItem[]
-  total           Float
-  status          String      @default("pending")
-  shippingAddress String      // Stored as JSON string
-  stripePaymentId String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id                String      @id @default(cuid())
+  orderNumber       String      @unique
+  userId            String?
+  user              User?       @relation(fields: [userId], references: [id])
+  guestEmail        String?
+  guestName         String?
+
+  items             OrderItem[]
+
+  subtotal          Float
+  shippingCost      Float
+  taxAmount         Float
+  discountAmount    Float       @default(0)
+  total             Float
+
+  shippingAddress   Json
+  billingAddress    Json?
+
+  paymentMethod     String?
+  paymentStatus     String      @default("pending")
+  stripePaymentId   String?
+  stripeSessionId   String?
+
+  fulfillmentStatus String      @default("unfulfilled")
+  trackingNumber    String?
+  carrier           String?
+
+  noteToSeller      String?
+  giftMessage       String?
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  paidAt            DateTime?
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
 }
 
 model OrderItem {
-  id        String   @id @default(cuid())
-  orderId   String
-  order     Order    @relation(fields: [orderId], references: [id])
-  productId String
-  product   Product  @relation(fields: [productId], references: [id])
-  quantity  Int
-  price     Float
-  createdAt DateTime @default(now())
+  id                  String   @id @default(cuid())
+  orderId             String
+  order               Order    @relation(fields: [orderId], references: [id])
+  productId           String
+  product             Product  @relation(fields: [productId], references: [id])
+  variantSelections   Json?
+  personalizationText String?
+  quantity            Int
+  unitPrice           Float
+  total               Float
+  createdAt           DateTime @default(now())
+}
+
+model Review {
+  id             String   @id @default(cuid())
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id])
+  buyerName      String
+  buyerEmail     String
+  rating         Int
+  text           String?
+  photos         String[]
+  verified       Boolean  @default(true)
+  sellerResponse String?
+  createdAt      DateTime @default(now())
 }
