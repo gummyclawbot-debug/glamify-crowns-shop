@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react'
-import { useCart } from '@/app/store/cartStore'
+import { getCartItemKey, useCart } from '@/app/store/cartStore'
 import CrownIcon from '@/app/components/CrownIcon'
 
 export default function CartPage() {
@@ -31,8 +31,11 @@ export default function CartPage() {
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Cart Items */}
         <div className="lg:col-span-2 space-y-4">
-          {items.map((item) => (
-            <div key={item.id} className="card p-4">
+          {items.map((item) => {
+            const itemKey = getCartItemKey(item)
+
+            return (
+            <div key={itemKey} className="card p-4">
               <div className="flex gap-4">
                 <div className="relative w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                   {item.image ? (
@@ -58,14 +61,14 @@ export default function CartPage() {
                   <div className="flex items-center gap-4">
                     <div className="flex items-center border border-gray-300 rounded-lg">
                       <button
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        onClick={() => updateQuantity(itemKey, item.quantity - 1)}
                         className="p-2 hover:bg-gray-100 transition-colors"
                       >
                         <Minus className="w-4 h-4" />
                       </button>
                       <span className="px-4 font-semibold">{item.quantity}</span>
                       <button
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        onClick={() => updateQuantity(itemKey, item.quantity + 1)}
                         className="p-2 hover:bg-gray-100 transition-colors"
                       >
                         <Plus className="w-4 h-4" />
@@ -73,7 +76,7 @@ export default function CartPage() {
                     </div>
                     
                     <button
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => removeItem(itemKey)}
                       className="text-red-500 hover:text-red-700 transition-colors"
                     >
                       <Trash2 className="w-5 h-5" />
@@ -88,7 +91,8 @@ export default function CartPage() {
                 </div>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
         
         {/* Order Summary */}

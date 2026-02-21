@@ -101,7 +101,7 @@ model Order {
   paymentMethod     String?
   paymentStatus     String      @default("pending")
   stripePaymentId   String?
-  stripeSessionId   String?
+  stripeSessionId   String?     @unique
 
   fulfillmentStatus String      @default("unfulfilled")
   trackingNumber    String?

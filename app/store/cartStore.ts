@@ -11,15 +11,19 @@ export interface CartItem {
   personalizationText?: string
 }
 
-function cartItemKey(item: { id: string; variantSelections?: Record<string, string>; personalizationText?: string }) {
+export function getCartItemKey(item: {
+  id: string
+  variantSelections?: Record<string, string>
+  personalizationText?: string
+}) {
   return `${item.id}_${JSON.stringify(item.variantSelections || {})}_${item.personalizationText || ''}`
 }
 
 interface CartStore {
   items: CartItem[]
   addItem: (item: Omit<CartItem, 'quantity'>) => void
-  removeItem: (id: string) => void
-  updateQuantity: (id: string, quantity: number) => void
+  removeItem: (itemKey: string) => void
+  updateQuantity: (itemKey: string, quantity: number) => void
   clearCart: () => void
   getTotal: () => number
 }
@@ -31,13 +35,13 @@ export const useCart = create<CartStore>()(
 
       addItem: (item) => {
         set((state) => {
-          const key = cartItemKey(item)
-          const existing = state.items.find((i) => cartItemKey(i) === key)
+          const key = getCartItemKey(item)
+          const existing = state.items.find((i) => getCartItemKey(i) === key)
 
           if (existing) {
             return {
               items: state.items.map((i) =>
-                cartItemKey(i) === key ? { ...i, quantity: i.quantity + 1 } : i
+                getCartItemKey(i) === key ? { ...i, quantity: i.quantity + 1 } : i
               ),
             }
           }
@@ -46,18 +50,26 @@ export const useCart = create<CartStore>()(
         })
       },
 
-      removeItem: (id) => {
-        set((state) => ({ items: state.items.filter((item) => item.id !== id) }))
+      removeItem: (itemKey) => {
+        set((state) => ({ items: state.items.filter((item) => getCartItemKey(item) !== itemKey) }))
       },
 
-      updateQuantity: (id, quantity) => {
-        if (quantity <= 0) { get().removeItem(id); return }
+      updateQuantity: (itemKey, quantity) => {
+        if (quantity <= 0) {
+          get().removeItem(itemKey)
+          return
+        }
+
         set((state) => ({
-          items: state.items.map((item) => item.id === id ? { ...item, quantity } : item),
+          items: state.items.map((item) =>
+            getCartItemKey(item) === itemKey ? { ...item, quantity } : item
+          ),
         }))
       },
 
-      clearCart: () => { set({ items: [] }) },
+      clearCart: () => {
+        set({ items: [] })
+      },
 
       getTotal: () => get().items.reduce((total, item) => total + item.price * item.quantity, 0),
     }),
