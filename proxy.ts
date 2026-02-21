@@ -2,8 +2,8 @@ import { withAuth } from "next-auth/middleware"
 import { NextResponse } from "next/server"
 
 export default withAuth(
-  function middleware(req) {
-    // Middleware logic runs after authentication check
+  function proxy(_req) {
+    // Proxy logic runs after authentication check
     return NextResponse.next()
   },
   {

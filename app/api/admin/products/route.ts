@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAdmin } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
+  const auth = await requireAdmin()
+  if (!auth.ok) return auth.response
+
   try {
     const products = await prisma.product.findMany({
       orderBy: { createdAt: 'desc' },
@@ -18,6 +22,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin()
+  if (!auth.ok) return auth.response
+
   try {
     const data = await request.json()
 
