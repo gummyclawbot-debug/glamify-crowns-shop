@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ShoppingBag, Lock, AlertTriangle } from 'lucide-react'
@@ -22,11 +22,64 @@ export default function CheckoutPage() {
     name: '', email: '', address: '', city: '', state: '', zip: '',
   })
 
-  const subtotal = getTotal()
-  const shippingCost = subtotal >= 50 ? 0 : 5
-  const isMD = form.state === 'MD'
-  const taxAmount = isMD ? Math.round((subtotal + shippingCost) * 0.06 * 100) / 100 : 0
-  const total = subtotal + shippingCost + taxAmount
+  const fallbackSubtotal = getTotal()
+  const fallbackShippingCost = fallbackSubtotal >= 50 ? 0 : 5
+  const fallbackTax = form.state === 'MD' ? Math.round((fallbackSubtotal + fallbackShippingCost) * 0.06 * 100) / 100 : 0
+
+  const [quote, setQuote] = useState({
+    subtotal: fallbackSubtotal,
+    shippingCost: fallbackShippingCost,
+    taxAmount: fallbackTax,
+    total: fallbackSubtotal + fallbackShippingCost + fallbackTax,
+  })
+  const [quoteLoading, setQuoteLoading] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const getQuote = async () => {
+      if (items.length === 0) return
+
+      setQuoteLoading(true)
+      try {
+        const res = await fetch('/api/checkout/quote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items,
+            shippingAddress: { state: form.state },
+          }),
+        })
+
+        const data = await res.json()
+        if (!cancelled && res.ok) {
+          setQuote({
+            subtotal: data.subtotal,
+            shippingCost: data.shippingCost,
+            taxAmount: data.taxAmount,
+            total: data.total,
+          })
+        }
+      } catch {
+        if (!cancelled) {
+          setQuote({
+            subtotal: fallbackSubtotal,
+            shippingCost: fallbackShippingCost,
+            taxAmount: fallbackTax,
+            total: fallbackSubtotal + fallbackShippingCost + fallbackTax,
+          })
+        }
+      } finally {
+        if (!cancelled) setQuoteLoading(false)
+      }
+    }
+
+    getQuote()
+
+    return () => {
+      cancelled = true
+    }
+  }, [items, form.state, fallbackSubtotal, fallbackShippingCost, fallbackTax])
 
   if (items.length === 0) {
     return (
@@ -50,7 +103,13 @@ export default function CheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           items,
-          shippingAddress: { state: form.state },
+          shippingAddress: {
+            name: form.name,
+            line1: form.address,
+            city: form.city,
+            state: form.state,
+            postalCode: form.zip,
+          },
         }),
       })
       const data = await res.json()
@@ -130,8 +189,8 @@ export default function CheckoutPage() {
             <h2 className="text-2xl font-bold mb-6">Order Summary</h2>
 
             <div className="space-y-3 mb-6">
-              {items.map((item) => (
-                <div key={item.id} className="flex gap-3">
+              {items.map((item, idx) => (
+                <div key={`${item.id}-${idx}`} className="flex gap-3">
                   <div className="relative w-14 h-14 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                     {item.image ? (
                       <Image src={item.image} alt={item.name} fill className="object-cover" />
@@ -153,31 +212,35 @@ export default function CheckoutPage() {
             <div className="space-y-2 border-t pt-4 mb-6">
               <div className="flex justify-between text-sm text-gray-600">
                 <span>Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>${quote.subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm text-gray-600">
                 <span>Shipping</span>
-                <span>{shippingCost === 0 ? 'FREE' : `$${shippingCost.toFixed(2)}`}</span>
+                <span>{quote.shippingCost === 0 ? 'FREE' : `$${quote.shippingCost.toFixed(2)}`}</span>
               </div>
-              {taxAmount > 0 && (
+              {quote.taxAmount > 0 && (
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>Tax (MD 6%)</span>
-                  <span>${taxAmount.toFixed(2)}</span>
+                  <span>${quote.taxAmount.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-lg font-bold border-t pt-2">
                 <span>Total</span>
-                <span className="text-primary">${total.toFixed(2)}</span>
+                <span className="text-primary">${quote.total.toFixed(2)}</span>
               </div>
             </div>
 
+            {quoteLoading && (
+              <p className="text-xs text-gray-500 mb-4">Updating shipping and tax…</p>
+            )}
+
             <button
               onClick={handleCheckout}
-              disabled={loading}
+              disabled={loading || quoteLoading}
               className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Lock className="w-4 h-4" />
-              {loading ? 'Redirecting...' : 'Pay with Stripe'}
+              {loading ? 'Redirecting...' : quoteLoading ? 'Calculating...' : 'Pay with Stripe'}
             </button>
 
             <p className="text-xs text-gray-500 text-center mt-3">

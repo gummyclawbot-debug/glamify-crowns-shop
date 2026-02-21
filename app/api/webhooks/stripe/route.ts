@@ -39,9 +39,19 @@ export async function POST(req: NextRequest) {
       const customerEmail = session.customer_details?.email || ''
       const customerName = session.customer_details?.name || ''
 
-      const subtotal = items.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0)
-      const totalFromStripe = (session.amount_total || 0) / 100
-      const shippingCost = (session.shipping_cost?.amount_total || 0) / 100
+      const subtotalFromItems = items.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0)
+      const subtotalFromMetadata = Number(session.metadata?.subtotal || '0')
+      const subtotal = Number.isFinite(subtotalFromMetadata) && subtotalFromMetadata > 0
+        ? subtotalFromMetadata
+        : subtotalFromItems
+
+      const total = (session.amount_total || 0) / 100
+
+      const shippingCostFromStripe = (session.shipping_cost?.amount_total || 0) / 100
+      const shippingCostFromMetadata = Number(session.metadata?.shippingCost || '0')
+      const shippingCost = Number.isFinite(shippingCostFromMetadata)
+        ? shippingCostFromMetadata
+        : shippingCostFromStripe
 
       const shippingState = (session.metadata?.shippingState || shipping?.address?.state || '').toUpperCase()
       const fallbackTax = shippingState === 'MD' || shippingState === 'MARYLAND'
@@ -49,9 +59,6 @@ export async function POST(req: NextRequest) {
         : 0
       const metadataTax = Number(session.metadata?.taxAmount || '0')
       const taxAmount = Number.isFinite(metadataTax) && metadataTax > 0 ? metadataTax : fallbackTax
-      const total = Number.isFinite(metadataTax) && metadataTax > 0
-        ? totalFromStripe
-        : totalFromStripe + taxAmount
 
       const shippingAddress = {
         name: shipping?.name || customerName,
@@ -79,7 +86,7 @@ export async function POST(req: NextRequest) {
           subtotal,
           shippingCost,
           taxAmount,
-          total: total + taxAmount,
+          total,
           shippingAddress,
           paymentMethod: 'stripe',
           paymentStatus: 'paid',

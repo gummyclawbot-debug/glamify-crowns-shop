@@ -1,30 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
+import { calculateCheckoutPricing, CheckoutInputItem } from '@/lib/checkout-pricing'
 
-interface CartItem {
-  id: string
-  name: string
-  price: number
-  image: string
-  quantity: number
-  variantSelections?: Record<string, string>
-  personalizationText?: string
-}
+export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest) {
   try {
-    const { items, shippingAddress } = await req.json() as {
-      items: CartItem[]
+    const { items, shippingAddress } = (await req.json()) as {
+      items: CheckoutInputItem[]
       shippingAddress?: { state?: string }
     }
 
-    if (!items || items.length === 0) {
-      return NextResponse.json({ error: 'No items provided' }, { status: 400 })
-    }
-
+    const pricing = await calculateCheckoutPricing(items, shippingAddress?.state)
     const stripe = getStripe()
 
-    const line_items = items.map((item) => ({
+    const line_items = pricing.items.map((item) => ({
       price_data: {
         currency: 'usd',
         product_data: {
@@ -41,14 +31,7 @@ export async function POST(req: NextRequest) {
       quantity: item.quantity,
     }))
 
-    const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0)
-    const shippingCost = subtotal >= 50 ? 0 : 5
-
-    const shippingState = (shippingAddress?.state || '').toUpperCase()
-    const isMD = shippingState === 'MD' || shippingState === 'MARYLAND'
-    const taxAmount = isMD ? Math.round((subtotal + shippingCost) * 0.06 * 100) / 100 : 0
-
-    if (taxAmount > 0) {
+    if (pricing.taxAmount > 0) {
       line_items.push({
         price_data: {
           currency: 'usd',
@@ -58,7 +41,7 @@ export async function POST(req: NextRequest) {
               productId: 'tax-md',
             },
           },
-          unit_amount: Math.round(taxAmount * 100),
+          unit_amount: Math.round(pricing.taxAmount * 100),
         },
         quantity: 1,
       })
@@ -75,8 +58,8 @@ export async function POST(req: NextRequest) {
         {
           shipping_rate_data: {
             type: 'fixed_amount',
-            fixed_amount: { amount: shippingCost * 100, currency: 'usd' },
-            display_name: shippingCost === 0 ? 'Free Shipping' : 'Standard Shipping',
+            fixed_amount: { amount: Math.round(pricing.shippingCost * 100), currency: 'usd' },
+            display_name: pricing.shippingCost === 0 ? 'Free Shipping' : 'Standard Shipping',
             delivery_estimate: {
               minimum: { unit: 'business_day', value: 3 },
               maximum: { unit: 'business_day', value: 7 },
@@ -86,16 +69,20 @@ export async function POST(req: NextRequest) {
       ],
       automatic_tax: { enabled: false },
       metadata: {
-        items: JSON.stringify(items.map(i => ({
-          id: i.id,
-          name: i.name,
-          price: i.price,
-          quantity: i.quantity,
-          variantSelections: i.variantSelections,
-          personalizationText: i.personalizationText,
-        }))),
-        shippingState,
-        taxAmount: taxAmount.toFixed(2),
+        items: JSON.stringify(
+          pricing.items.map((i) => ({
+            id: i.id,
+            name: i.name,
+            price: i.price,
+            quantity: i.quantity,
+            variantSelections: i.variantSelections,
+            personalizationText: i.personalizationText,
+          }))
+        ),
+        shippingState: pricing.shippingState,
+        shippingCost: pricing.shippingCost.toFixed(2),
+        taxAmount: pricing.taxAmount.toFixed(2),
+        subtotal: pricing.subtotal.toFixed(2),
       },
       custom_text: {
         submit: { message: 'All sales are final. No returns or exchanges.' },
@@ -104,7 +91,15 @@ export async function POST(req: NextRequest) {
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout/cancel`,
     })
 
-    return NextResponse.json({ url: session.url })
+    return NextResponse.json({
+      url: session.url,
+      totals: {
+        subtotal: pricing.subtotal,
+        shippingCost: pricing.shippingCost,
+        taxAmount: pricing.taxAmount,
+        total: pricing.total,
+      },
+    })
   } catch (error: unknown) {
     console.error('Checkout error:', error)
     const message = error instanceof Error ? error.message : 'Internal server error'
