@@ -39,14 +39,19 @@ export async function POST(req: NextRequest) {
       const customerEmail = session.customer_details?.email || ''
       const customerName = session.customer_details?.name || ''
 
-      const subtotal = (session.amount_subtotal || 0) / 100
-      const total = (session.amount_total || 0) / 100
+      const subtotal = items.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0)
+      const totalFromStripe = (session.amount_total || 0) / 100
       const shippingCost = (session.shipping_cost?.amount_total || 0) / 100
 
-      // Calculate MD tax
-      const shippingState = shipping?.address?.state || ''
-      const isMD = shippingState.toUpperCase() === 'MD' || shippingState.toUpperCase() === 'MARYLAND'
-      const taxAmount = isMD ? Math.round((subtotal + shippingCost) * 0.06 * 100) / 100 : 0
+      const shippingState = (session.metadata?.shippingState || shipping?.address?.state || '').toUpperCase()
+      const fallbackTax = shippingState === 'MD' || shippingState === 'MARYLAND'
+        ? Math.round((subtotal + shippingCost) * 0.06 * 100) / 100
+        : 0
+      const metadataTax = Number(session.metadata?.taxAmount || '0')
+      const taxAmount = Number.isFinite(metadataTax) && metadataTax > 0 ? metadataTax : fallbackTax
+      const total = Number.isFinite(metadataTax) && metadataTax > 0
+        ? totalFromStripe
+        : totalFromStripe + taxAmount
 
       const shippingAddress = {
         name: shipping?.name || customerName,

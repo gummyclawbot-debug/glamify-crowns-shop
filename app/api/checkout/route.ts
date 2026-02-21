@@ -44,6 +44,26 @@ export async function POST(req: NextRequest) {
     const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0)
     const shippingCost = subtotal >= 50 ? 0 : 5
 
+    const shippingState = (shippingAddress?.state || '').toUpperCase()
+    const isMD = shippingState === 'MD' || shippingState === 'MARYLAND'
+    const taxAmount = isMD ? Math.round((subtotal + shippingCost) * 0.06 * 100) / 100 : 0
+
+    if (taxAmount > 0) {
+      line_items.push({
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Sales Tax (MD 6%)',
+            metadata: {
+              productId: 'tax-md',
+            },
+          },
+          unit_amount: Math.round(taxAmount * 100),
+        },
+        quantity: 1,
+      })
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
@@ -74,6 +94,8 @@ export async function POST(req: NextRequest) {
           variantSelections: i.variantSelections,
           personalizationText: i.personalizationText,
         }))),
+        shippingState,
+        taxAmount: taxAmount.toFixed(2),
       },
       custom_text: {
         submit: { message: 'All sales are final. No returns or exchanges.' },
